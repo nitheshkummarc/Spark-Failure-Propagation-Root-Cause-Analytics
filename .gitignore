@@ -1,0 +1,61 @@
+# Scala / SBT
+target/
+project/target/
+project/project/
+*.class
+*.log
+*.jar
+
+# IDE / Editor
+.idea/
+.vscode/
+.metals/
+.bloop/
+.bsp/
+*.iml
+*.swp
+*~
+.DS_Store
+Thumbs.db
+project/metals.sbt
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.ipynb_checkpoints/
+venv/
+env/
+.env
+.venv
+
+# Node (if any frontend tooling is added later)
+node_modules/
+dist/
+package-lock.json
+
+# Data & Output
+*.parquet
+*.csv
+*.zstd
+*.lz4
+data/
+logs/
+spark-warehouse/
+derby.log
+metastore_db/
+
+# Large files
+*.gz
+*.tar
+*.zip
+
+# Secrets
+*.pem
+*.key
+secrets/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini

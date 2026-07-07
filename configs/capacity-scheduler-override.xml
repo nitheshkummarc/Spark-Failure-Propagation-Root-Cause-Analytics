@@ -1,0 +1,21 @@
+<!--
+  YARN Capacity Scheduler Override
+  
+  When running multiple concurrent Spark applications (e.g., the 80-run
+  failure injection campaign), the default AM resource percentage (0.1)
+  is too restrictive. Increase to 0.8 to allow more concurrent Application Masters.
+  
+  Apply on the resourcemanager container:
+    docker cp configs/capacity-scheduler-override.xml resourcemanager:/etc/hadoop/capacity-scheduler.xml
+    docker exec resourcemanager yarn rmadmin -refreshQueues
+-->
+<configuration>
+  <property>
+    <name>yarn.scheduler.capacity.maximum-am-resource-percent</name>
+    <value>0.8</value>
+  </property>
+  <property>
+    <name>yarn.scheduler.capacity.root.default.maximum-am-resource-percent</name>
+    <value>0.8</value>
+  </property>
+</configuration>
