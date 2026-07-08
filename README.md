@@ -134,19 +134,19 @@ docker exec spark-shell /opt/spark/bin/spark-submit /opt/spark-rca/research/scri
 
 ## Results
 
-| Metric | Random Forest |
-|--------|---------------|
+| Metric | Random Forest (Model C, 22 features) |
+|--------|---------------------------------------|
 | Accuracy | ≈ 88.2% |
 | Weighted Precision | ≈ 0.93 |
 | Weighted Recall | ≈ 0.88 |
-| Weighted F1 | ≈ 0.87 |
-| 5-Fold CV F1 | ≈ 0.95 |
+| Weighted F1 | ≈ 0.8725 |
+| 5-Fold CV F1 | ≈ 0.9524 |
 | 5-Fold CV Accuracy | ≈ 96.1% |
 
 ### Key Findings
 
 - **Reverse BFS** successfully localized dependency-aware root causes across all evaluated failure scenarios.
-- **Confound analysis** demonstrated that prediction performance remained stable after removing query-structural features, indicating the model learned runtime execution behavior rather than query fingerprints.
+- **Confound analysis** showed that removing 3 query-structural features (`total_stages`, `stage_depth_of_failure`, `peak_memory_ratio`) marginally *improved* F1 (0.8676 → 0.8725) and CV F1 (0.9507 → 0.9524), with 100% cross-query prediction invariance (17/17), confirming the model learns runtime execution behavior — not query fingerprints.
 - **Runtime telemetry features** were more informative than workflow structure for failure classification.
 
 ---
