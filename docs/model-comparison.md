@@ -52,7 +52,7 @@ Random Forest was selected as the primary model based on:
 
 GBTs were considered but not included in the primary evaluation because:
 
-- With 79 samples, the risk of overfitting with boosting is higher than with bagging.
+- With 79 usable samples, the risk of overfitting with boosting is higher than with bagging.
 - Random Forest already achieved strong performance, making the marginal benefit of GBTs unlikely to justify the added complexity.
 
 ### Why not deep learning?

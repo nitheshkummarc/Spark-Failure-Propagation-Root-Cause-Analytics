@@ -8,7 +8,7 @@ This document describes the dataset, training methodology, and evaluation protoc
 
 | Property | Value |
 |----------|-------|
-| Total applications | 79 |
+| Total applications | 80 generated, 79 successfully parsed for training |
 | Failure classes | 7 (1 baseline + 6 injected failures) |
 | Data source | TPC-H benchmark queries (~25GB scale factor) |
 | Event log format | Spark event logs (JSON, ZSTD-compressed) |
@@ -91,7 +91,7 @@ Weighted variants account for class imbalance by scaling each class's contributi
 
 ## Cross-Validation
 
-5-fold cross-validation is performed on the full dataset (79 applications) using Spark ML's `CrossValidator`:
+5-fold cross-validation is performed on the available dataset (79 successfully parsed applications) using Spark ML's `CrossValidator`:
 
 - Estimator: Full pipeline (VectorAssembler → StandardScaler → RandomForestClassifier)
 - Evaluator: Weighted F1

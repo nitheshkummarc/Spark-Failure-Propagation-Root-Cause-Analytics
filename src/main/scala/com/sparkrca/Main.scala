@@ -26,7 +26,8 @@ object Main {
     eventLogPath: String = SparkConfig.Paths.EVENT_LOGS,
     modelPath: String = SparkConfig.Paths.ML_MODELS,
     scenario: String = "all",
-    iterations: Int = 1
+    iterations: Int = 1,
+    appId: String = ""
   )
 
   val builder = OParser.builder[Config]
@@ -91,6 +92,16 @@ object Main {
         .action((_, c) => c.copy(mode = "info"))
         .text("Print project information and configuration"),
         
+      cmd("report")
+        .action((_, c) => c.copy(mode = "report"))
+        .text("Generate unified RCA + ML report for a specific application")
+        .children(
+          opt[String]("appId")
+            .required()
+            .action((x, c) => c.copy(appId = x))
+            .text("The Application ID to generate the report for (e.g. application_123_456)")
+        ),
+        
       help("help").text("Print this usage text")
     )
   }
@@ -111,6 +122,7 @@ object Main {
           case "preprocess" => runPreprocess(config)
           case "pipeline" => runPipeline(config)
           case "info" => printInfo(config)
+          case "report" => runReport(config)
           case "train" =>
             println("\n>>> PHASE 4: ML Training via PySpark")
             import sys.process._
@@ -325,6 +337,89 @@ object Main {
     println("  pipeline   - Run complete end-to-end pipeline")
     
     FailureScenarios.printScenarioSummary()
+  }
+
+  /**
+   * Generates a unified JSON report for a given application ID.
+   * This combines the independent outputs from PropagationAnalyzer and ML model.
+   */
+  def runReport(config: Config): Unit = {
+    val spark = SparkConfig.createSparkSession("RCA-Report", config.master, enableEventLog = false)
+    
+    try {
+      import spark.implicits._
+      import org.apache.spark.sql.functions._
+      
+      val rcaPath = s"hdfs://namenode:8020/project/preprocess/root_causes.parquet"
+      val mlPath = s"hdfs://namenode:8020/project/predictions"
+      
+      val appId = config.appId
+      
+      val rcaDf = try {
+        spark.read.parquet(rcaPath).filter($"app_id" === appId)
+      } catch {
+        case _: Exception => spark.emptyDataFrame
+      }
+      
+      val mlDf = try {
+        spark.read.parquet(mlPath).filter($"app_id" === appId)
+      } catch {
+        case _: Exception => spark.emptyDataFrame
+      }
+      
+      if (rcaDf.isEmpty && mlDf.isEmpty) {
+        println(s"ERROR: No data found for app_id: $appId")
+        return
+      }
+      
+      val rootCauseIds = if (!rcaDf.isEmpty) {
+        val hasNewCol = rcaDf.columns.contains("root_cause_stage_ids")
+        val colName = if (hasNewCol) "root_cause_stage_ids" else "root_cause_stage_id"
+        val row = rcaDf.select(colName).first()
+        val str = row.getAs[Any](0).toString
+        str.split(",").map(_.trim).filter(_.nonEmpty).map(_.toInt).mkString("[", ", ", "]")
+      } else "[]"
+      
+      val victimIds = if (!rcaDf.isEmpty) {
+        val row = rcaDf.select("victim_stages").first()
+        val str = row.getAs[Any](0).toString
+        str.split(",").map(_.trim).filter(_.nonEmpty).map(_.toInt).mkString("[", ", ", "]")
+      } else "[]"
+      
+      // The dataset classes
+      val classMap = Map(
+        1.0 -> "OOM", 
+        2.0 -> "Data Skew", 
+        3.0 -> "Serialization",
+        4.0 -> "Disk Space",
+        5.0 -> "Network Timeout",
+        6.0 -> "Metadata",
+        0.0 -> "Baseline"
+      )
+      
+      val (predClass, confidence) = if (!mlDf.isEmpty) {
+        val row = mlDf.select("prediction", "probability").first()
+        val pred = row.getAs[Double]("prediction")
+        val className = classMap.getOrElse(pred, "Unknown")
+        // Get max probability
+        val probVec = row.getAs[org.apache.spark.ml.linalg.Vector]("probability")
+        val conf = probVec.toArray.max
+        (className, conf)
+      } else ("Not Available", 0.0)
+      
+      // Print JSON structure as requested
+      println(s"""
+        |{
+        |  "app_id": "$appId",
+        |  "root_cause_analysis": { "root_cause_stages": $rootCauseIds, "victim_stages": $victimIds },
+        |  "failure_classification": { "predicted_class": "$predClass", "confidence": $confidence },
+        |  "note": "root_cause_analysis and failure_classification are independent analyses over the same raw event log; classification does not currently use root_cause_analysis as an input."
+        |}
+        |""".stripMargin)
+        
+    } finally {
+      SparkConfig.stopSession(spark)
+    }
   }
 
   /**

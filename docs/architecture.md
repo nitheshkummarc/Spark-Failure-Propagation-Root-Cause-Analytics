@@ -48,7 +48,7 @@ flowchart TB
         
         C1 --> C2
         C2 --> C3
-        C3 --> C4
+        C2 --> C4
     end
 
     subgraph Phase4["🟣 PHASE 4: Machine Learning"]
@@ -61,10 +61,7 @@ flowchart TB
     end
 
     subgraph Output["🟡 OUTPUT"]
-        E1["Root Cause<br/>Prediction"]
-        E2["Classification<br/>Report"]
-        
-        E1 --> E2
+        E1["Unified<br/>Report"]
     end
 
     A4 --> B1
@@ -76,8 +73,8 @@ flowchart TB
     B7 --> C1
     B8 --> C1
     C4 --> D1
+    C3 --> E1
     D3 --> E1
-
     style Phase1 fill:#10b981,color:#fff
     style Phase2 fill:#f97316,color:#fff
     style Phase3 fill:#3b82f6,color:#fff
@@ -213,7 +210,7 @@ OUTPUT: Root Cause Stage ID
 
 ### Phase 4: Machine Learning
 
-**Purpose**: Train and evaluate Random Forest classifier for root cause prediction.
+**Purpose**: Train and evaluate Random Forest classifier for failure category prediction.
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
@@ -275,8 +272,8 @@ OUTPUT: Root Cause Stage ID
                                     ▼
                            ┌────────────────┐
                            │  Predictions   │
-                           │  Root Cause    │
-                           │    Labels      │
+                           │  Failure       │
+                           │    Class       │
                            └────────────────┘
 ```
 

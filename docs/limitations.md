@@ -6,24 +6,17 @@ This document honestly states the known limitations of the current system and id
 
 ## Known Limitations
 
-### 1. Single Root Cause Assumption
-
-The current Reverse BFS implementation identifies **one** root cause per application. It starts from the terminal failed stage and traverses backward until it finds a failed stage with no failed parents.
-
-In practice, a Spark application can have **multiple independent failure trees** — for example, two disconnected subgraphs failing from unrelated causes. The current algorithm will select one and miss the other.
-
-**Impact**: For the 7 failure scenarios in this dataset, each application has a single dominant failure mode, so this limitation does not affect results. It would become relevant for production workloads with complex multi-query DAGs.
 
 ### 2. Small Dataset
 
 | Property | Value |
 |----------|-------|
-| Total applications | 79 |
+| Total applications | 80 generated, 79 successfully parsed for training |
 | Average per class | ~11 |
 | Smallest class | ~9 |
 | Largest class | ~14 |
 
-79 samples is sufficient for proof-of-concept validation but insufficient for production deployment. With ~11 samples per class, the model's generalization to unseen workloads is uncertain. 5-fold cross-validation provides bounded confidence but does not eliminate this risk.
+79 usable samples is sufficient for proof-of-concept validation but insufficient for production deployment. With ~11 samples per class, the model's generalization to unseen workloads is uncertain. 5-fold cross-validation provides bounded confidence but does not eliminate this risk.
 
 ### 3. TPC-H Workload Diversity
 

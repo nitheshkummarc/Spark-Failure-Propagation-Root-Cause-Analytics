@@ -34,7 +34,7 @@ Direct in-memory traversal on the driver has lower overhead and is simpler to re
 
 ## Why not GNNs?
 
-Graph Neural Networks require substantially larger labeled graph datasets and introduce model complexity that is difficult to justify at this scale. With 79 applications, there is insufficient data for graph neural network training or meaningful generalization.
+Graph Neural Networks require substantially larger labeled graph datasets and introduce model complexity that is difficult to justify at this scale. With 79 successfully parsed applications (out of 80 generated), there is insufficient data for graph neural network training or meaningful generalization.
 
 Reverse BFS is deterministic and interpretable — given the same DAG, it always produces the same root cause. A GNN would be a learned approximation of what is already a well-defined graph algorithm.
 
@@ -50,7 +50,7 @@ Random Forest was selected because:
 
 1. **Ensemble stability** — 100 decision trees reduce variance compared to a single tree.
 2. **Feature importance** — The model provides a natural ranking of which telemetry features matter most, which is valuable for interpretability and for validating that the model learns meaningful signals.
-3. **Robustness to small datasets** — Bagging with replacement creates diverse training subsets, reducing overfit risk on 79 samples.
+3. **Robustness to small datasets** — Bagging with replacement creates diverse training subsets, reducing overfit risk on the 79 available samples.
 4. **Best empirical performance** — Highest weighted F1 among all evaluated models.
 
 Logistic Regression served as a linear baseline. Decision Tree provided interpretability at the cost of stability. Random Forest balanced all three concerns.

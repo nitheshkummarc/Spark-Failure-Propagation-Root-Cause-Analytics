@@ -41,7 +41,7 @@ class PropagationAnalyzerTest extends AnyFunSuite with Matchers {
     result.propagationPath should contain (3)
   }
 
-  test("analyzeRootCause should trace back through multiple victims to a single root cause") {
+  test("analyzeRootCause should trace back through multiple victims to the root cause") {
     // Stage 1 (Completed)
     // Stage 2 (Failed, Root Cause)
     // Stage 3 (Failed, Victim) depends on 2
