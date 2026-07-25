@@ -19,7 +19,7 @@
 > Spark, Hadoop (HDFS/YARN), and supporting services communicate through Docker's internal network. Running the pipeline directly from the host operating system is not supported.
 > 
 > - **Scala Preprocessing** runs directly on the Spark cluster.
-> - **Python ML Scripts and Jupyter Notebooks** run inside the `spark-shell` container (which serves as the Python lab environment).
+> - **Python ML Scripts and Jupyter Notebooks** require a separate Python environment (such as Google Colab, Databricks, or a local Jupyter installation) because the provided Docker cluster is optimized strictly for Scala/Spark.
 
 ---
 
@@ -29,10 +29,11 @@ When a Spark job fails on a multi-stage DAG, the terminal error message is often
 
 This project automates that process:
 
-1. **Traverses the DAG backward** (Reverse BFS) from the terminal failure to identify the true root-cause stage.
-2. **Reconstructs the execution DAG** from Spark event logs using real `parent_ids` from `SparkListenerStageSubmitted` events.
-3. **Extracts 25 telemetry features** from task and stage metrics across the entire application lifecycle.
-4. **Classifies the failure category** using a Random Forest trained on 7 labeled failure scenarios.
+### Features
+- **Reverse BFS Algorithm**: Traverses the DAG from terminal failure up to the earliest failed stage to identify the true root cause.
+- **Machine Learning Classification**: Extracts 25 features and uses a Random Forest classifier to categorize failures into 7 distinct scenarios.
+- **Automated Failure Injection**: Includes a framework to deterministically simulate OOM, Data Skew, Network Timeouts, and more for generating labeled datasets.
+
 
 ---
 
@@ -111,7 +112,7 @@ docker exec spark-shell /opt/spark/bin/spark-submit \
 ### Step 3: Run the Pipeline
 Execute the failure injection campaign and batch preprocessing (Log Parsing, DAG Reconstruction, Reverse BFS, Feature Extraction):
 ```bash
-# Run failure injection (79 applications)
+# Run failure injection (80 applications)
 docker exec spark-shell /opt/spark/bin/spark-submit \
   --master yarn --class com.sparkrca.injection.CampaignRunner \
   /opt/spark/jars/spark-rca-assembly.jar
@@ -123,12 +124,11 @@ docker exec spark-shell /opt/spark/bin/spark-submit \
 ```
 
 ### Step 4: Train ML Models
-Train and evaluate the Random Forest classifier on the extracted features using the Python script:
-```bash
-docker exec spark-shell /opt/spark/bin/spark-submit /opt/spark-rca/research/scripts/run_ml_pipeline.py
-```
+Train and evaluate the Random Forest classifier on the extracted features using the Jupyter Notebook:
+Open Google Colab, Databricks, or a local Jupyter environment and execute the notebook located at:
+`research/notebooks/spark_rca_ml.ipynb`
 
-> **Note**: For interactive exploration, the repository includes `research/notebooks/spark_rca_ml.ipynb`. To run it, you must configure a local PySpark environment that can connect to the Docker network's HDFS (`hdfs://localhost:8020`).
+> **Note**: The Docker container is strictly a JVM environment for Scala preprocessing. Python is intentionally excluded from the cluster to save resources. You must download the generated `features.parquet` file and run the notebook in a separate Python environment with PySpark and scikit-learn installed.
 
 ---
 

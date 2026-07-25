@@ -58,7 +58,6 @@ object SparkConfig {
     def labelName(label: Int): String = labelNames.getOrElse(label, s"UNKNOWN($label)")
   }
 
-
   // ============================================================================
   // Spark Session Builder
   // ============================================================================
@@ -111,7 +110,7 @@ object SparkConfig {
       conf
         .setIfMissing("spark.eventLog.enabled", "true")
         .setIfMissing("spark.eventLog.dir", logDir)
-        .setIfMissing("spark.eventLog.compress", "false")
+        .setIfMissing("spark.eventLog.compress", "zstd")
     }
     
     SparkSession.builder()

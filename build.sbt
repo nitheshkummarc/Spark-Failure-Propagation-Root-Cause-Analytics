@@ -23,9 +23,7 @@ libraryDependencies ++= Seq(
   "org.apache.hadoop" % "hadoop-client" % hadoopVersion % "provided",
   "org.apache.hadoop" % "hadoop-hdfs" % hadoopVersion % "provided",
   
-  // JSON Parsing for Log Analysis (using native backend to avoid Jackson conflicts with Spark)
-  "org.json4s" %% "json4s-native" % "4.0.6",
-  
+
   // CLI Argument Parsing
   "com.github.scopt" %% "scopt" % "4.1.0",
   

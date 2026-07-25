@@ -14,9 +14,9 @@ object PropagationAnalyzer {
    */
   case class RootCauseResult(
     appId: String,
-    rootCauseStageId: Int,
-    rootCauseStageName: String,
-    failureReason: String,
+    rootCauseStageIds: Set[Int],
+    rootCauseStageNames: String,
+    failureReasons: String,
     propagationPath: Seq[Int],    // Path from root cause to terminal failure
     victimStages: Set[Int],       // Stages that failed due to propagation
     analysisConfidence: Double    // Confidence in the analysis (0-1)
@@ -27,8 +27,8 @@ object PropagationAnalyzer {
       println("ROOT CAUSE ANALYSIS RESULT")
       println("=" * 60)
       println(s"Application: $appId")
-      println(s"Root Cause Stage: $rootCauseStageId ($rootCauseStageName)")
-      println(s"Failure Reason: $failureReason")
+      println(s"Root Cause Stages: ${rootCauseStageIds.mkString(", ")} ($rootCauseStageNames)")
+      println(s"Failure Reasons: $failureReasons")
       println(s"Propagation Path: ${propagationPath.mkString(" → ")}")
       println(s"Victim Stages: ${victimStages.mkString(", ")}")
       println(f"Analysis Confidence: ${analysisConfidence * 100}%.1f%%")
@@ -54,6 +54,7 @@ object PropagationAnalyzer {
    * @param dag The execution DAG
    * @return RootCauseResult — always returns a result (NO_FAILURE for healthy apps)
    */
+   
   def analyzeRootCause(dag: DAGBuilder.ExecutionDAG): RootCauseResult = {
     
     println(s"\n>>> Analyzing root cause for: ${dag.appId}")
@@ -71,9 +72,9 @@ object PropagationAnalyzer {
         DAGBuilder.StageNode(leafStageId, "Unknown", Set.empty))
       return RootCauseResult(
         appId = dag.appId,
-        rootCauseStageId = leafStage.stageId,
-        rootCauseStageName = leafStage.stageName,
-        failureReason = "NO_FAILURE",
+        rootCauseStageIds = Set(leafStage.stageId),
+        rootCauseStageNames = leafStage.stageName,
+        failureReasons = "NO_FAILURE",
         propagationPath = Seq(leafStage.stageId),
         victimStages = Set.empty,
         analysisConfidence = 1.0
@@ -91,9 +92,9 @@ object PropagationAnalyzer {
       val fallback = failedStages.head
       return RootCauseResult(
         appId = dag.appId,
-        rootCauseStageId = fallback.stageId,
-        rootCauseStageName = fallback.stageName,
-        failureReason = fallback.failureReason.getOrElse("Unknown"),
+        rootCauseStageIds = Set(fallback.stageId),
+        rootCauseStageNames = fallback.stageName,
+        failureReasons = fallback.failureReason.getOrElse("Unknown"),
         propagationPath = Seq(fallback.stageId),
         victimStages = Set.empty,
         analysisConfidence = 0.3
@@ -104,16 +105,16 @@ object PropagationAnalyzer {
     println(s"Terminal failed stage: ${terminal.stageId}")
     
     // Reverse BFS to find root cause
-    val (rootCauseStage, path, victims) = reverseBFS(dag, terminal.stageId)
+    val (rootCauseStages, path, victims) = reverseBFS(dag, terminal.stageId)
     
     RootCauseResult(
       appId = dag.appId,
-      rootCauseStageId = rootCauseStage.stageId,
-      rootCauseStageName = rootCauseStage.stageName,
-      failureReason = rootCauseStage.failureReason.getOrElse("Unknown"),
+      rootCauseStageIds = rootCauseStages.map(_.stageId),
+      rootCauseStageNames = rootCauseStages.map(_.stageName).mkString(" | "),
+      failureReasons = rootCauseStages.map(_.failureReason.getOrElse("Unknown")).mkString(" | "),
       propagationPath = path,
       victimStages = victims,
-      analysisConfidence = calculateConfidence(dag, rootCauseStage, path)
+      analysisConfidence = calculateConfidence(dag, rootCauseStages, path)
     )
   }
 
@@ -151,14 +152,14 @@ object PropagationAnalyzer {
   private def reverseBFS(
     dag: DAGBuilder.ExecutionDAG,
     startStageId: Int
-  ): (DAGBuilder.StageNode, Seq[Int], Set[Int]) = {
+  ): (Set[DAGBuilder.StageNode], Seq[Int], Set[Int]) = {
     
     val visited = mutable.Set[Int]()
     val queue = mutable.Queue[Int](startStageId)
     val path = mutable.ListBuffer[Int](startStageId)
     val victims = mutable.Set[Int]()
     
-    var rootCauseStageId = startStageId
+    val rootCauseStageIds = mutable.Set[Int]()
     
     while (queue.nonEmpty) {
       val currentId = queue.dequeue()
@@ -172,16 +173,14 @@ object PropagationAnalyzer {
           // Get parent stages
           val parents = dag.getParents(currentId)
           
-          // Include ALL failed parents — traverse through logical aborts
-          // to reach the TRUE root cause upstream
-          val failedParents = parents.filter(_.isFailed)
+          // Filter to failed parents (excluding logical aborts)
+          val failedParents = parents.filter { p =>
+            p.isFailed && !isLogicalAbort(p)
+          }
           
           if (failedParents.isEmpty) {
-            // No failed parents → this is a ROOT CAUSE candidate
-            // Prefer non-abort stages as root cause
-            if (!isLogicalAbort(currentStage.get) || rootCauseStageId == startStageId) {
-              rootCauseStageId = currentId
-            }
+            // No failed parents → this is a ROOT CAUSE
+            rootCauseStageIds.add(currentId)
             println(s"  Root cause identified: Stage $currentId (no failed parents)")
           } else {
             // Has failed parents → this stage is a VICTIM
@@ -197,14 +196,16 @@ object PropagationAnalyzer {
             }
           }
         }
-
       }
     }
     
-    val rootCauseStage = dag.stages.getOrElse(rootCauseStageId, 
-      DAGBuilder.StageNode(rootCauseStageId, "Unknown", Set.empty))
+    val rootCauseStages = if (rootCauseStageIds.nonEmpty) {
+      rootCauseStageIds.map(id => dag.stages.getOrElse(id, DAGBuilder.StageNode(id, "Unknown", Set.empty))).toSet
+    } else {
+      Set(dag.stages.getOrElse(startStageId, DAGBuilder.StageNode(startStageId, "Unknown", Set.empty)))
+    }
     
-    (rootCauseStage, path.toSeq, victims.toSet)
+    (rootCauseStages, path.toSeq, victims.toSet)
   }
 
   /**
@@ -230,15 +231,14 @@ object PropagationAnalyzer {
    */
   private def calculateConfidence(
     dag: DAGBuilder.ExecutionDAG,
-    rootCauseStage: DAGBuilder.StageNode,
+    rootCauseStages: Set[DAGBuilder.StageNode],
     path: Seq[Int]
   ): Double = {
     
     var confidence = 0.5  // Base confidence
     
-    // Boost if root cause has a clear failure reason
-    if (rootCauseStage.failureReason.isDefined && 
-        rootCauseStage.failureReason.get.length > 10) {
+    // Boost if any root cause has a clear failure reason
+    if (rootCauseStages.exists(s => s.failureReason.isDefined && s.failureReason.get.length > 10)) {
       confidence += 0.2
     }
     
@@ -248,19 +248,15 @@ object PropagationAnalyzer {
       confidence += 0.15
     }
     
-    // Boost if all parent stages of root cause are successful
-    val rootParents = dag.getParents(rootCauseStage.stageId)
-    if (rootParents.forall(_.isCompleted)) {
+    // Boost if all parent stages of all root causes are successful
+    val allRootParents = rootCauseStages.flatMap(s => dag.getParents(s.stageId))
+    if (allRootParents.forall(_.isCompleted)) {
       confidence += 0.15
     }
     
-    // Penalize if multiple root cause candidates (ambiguous)
-    val failedStages = dag.failedStages
-    val potentialRoots = failedStages.count { stage =>
-      dag.getParents(stage.stageId).forall(!_.isFailed)
-    }
-    if (potentialRoots > 1) {
-      confidence -= 0.1 * (potentialRoots - 1)
+    // Multiple true root causes is valid now, but we penalize if it's highly fragmented
+    if (rootCauseStages.size > 2) {
+      confidence -= 0.1 * (rootCauseStages.size - 2)
     }
     
     math.max(0.0, math.min(1.0, confidence))
@@ -290,18 +286,18 @@ object PropagationAnalyzer {
     results.map { r =>
       (
         r.appId,
-        r.rootCauseStageId,
-        r.rootCauseStageName,
-        r.failureReason,
+        r.rootCauseStageIds.mkString(","),
+        r.rootCauseStageNames,
+        r.failureReasons,
         r.propagationPath.mkString(","),
         r.victimStages.mkString(","),
         r.analysisConfidence
       )
     }.toDF(
       "app_id",
-      "root_cause_stage_id",
-      "root_cause_stage_name",
-      "failure_reason",
+      "root_cause_stage_ids",
+      "root_cause_stage_names",
+      "failure_reasons",
       "propagation_path",
       "victim_stages",
       "analysis_confidence"

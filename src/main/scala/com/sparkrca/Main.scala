@@ -82,10 +82,7 @@ object Main {
             .text("Output path for trained model")
         ),
         
-      cmd("predict")
-        .action((_, c) => c.copy(mode = "predict"))
-        .text("Make predictions on new event logs"),
-        
+
       cmd("pipeline")
         .action((_, c) => c.copy(mode = "pipeline"))
         .text("Run the complete pipeline end-to-end"),
@@ -115,11 +112,14 @@ object Main {
           case "pipeline" => runPipeline(config)
           case "info" => printInfo(config)
           case "train" =>
-            println("ERROR: 'train' command is not implemented in Scala. Use spark_rca_ml.ipynb for ML training.")
-            System.exit(1)
-          case "predict" =>
-            println("ERROR: 'predict' command is not implemented in Scala. Use spark_rca_ml.ipynb for predictions.")
-            System.exit(1)
+            println("\n>>> PHASE 4: ML Training via PySpark")
+            import sys.process._
+            val result = "spark-submit /opt/spark-rca/research/scripts/run_ml_pipeline.py".!
+            if (result != 0) {
+              println("ERROR: Training failed.")
+              System.exit(1)
+            }
+
           case "help" | _ => OParser.usage(parser)
         }
       case None =>
@@ -321,7 +321,7 @@ object Main {
     println("  inject     - Run failure injection scenarios")
     println("  preprocess - Parse logs and extract features")
     println("  train      - Train the ML classifier")
-    println("  predict    - Make predictions on new logs")
+
     println("  pipeline   - Run complete end-to-end pipeline")
     
     FailureScenarios.printScenarioSummary()

@@ -353,7 +353,7 @@ OUTPUT: Root Cause Stage ID
 ## Performance Considerations
 
 1. **Parquet Format**: Columnar storage reduces I/O for analytical queries
-2. **Event Log Compression**: Disabled (`spark.eventLog.compress=false`) for reliable parsing
+2. **Event Log Compression**: Supported (`spark.eventLog.compress=zstd`) and handled seamlessly by `LogParser` via `ZstdInputStream`.
 3. **Adaptive Query Execution**: Enabled for dynamic optimization
 4. **Kryo Serialization**: Used for faster object serialization
 5. **Log4j Configuration**: Silences Spark verbosity to improve log analysis

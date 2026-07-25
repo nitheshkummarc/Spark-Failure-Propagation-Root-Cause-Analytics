@@ -12,10 +12,10 @@ import scala.collection.mutable.ListBuffer
 /**
  * Campaign Runner: Automated Failure Injection Orchestrator
  * 
- * Generates 75 labeled log files for ML training:
- * - Group A (Baseline): 15 runs with varying executor cores
- * - Group B (Resource Failures): OOM(10) + DISK(10) + NET(10) = 30 runs
- * - Group C (Logic Failures): SKEW(10) + SER(10) + META(10) = 30 runs
+ * Generates 80 labeled log files for ML training:
+ * - Group A (Baseline): 12 runs with varying executor cores
+ * - Group B (Resource Failures): OOM(12) + DISK(11) + NET(11) = 34 runs
+ * - Group C (Logic Failures): SKEW(12) + SER(11) + META(11) = 34 runs
  * 
  * Usage: spark-submit --class com.sparkrca.injection.CampaignRunner \
  *          --master yarn --deploy-mode client \

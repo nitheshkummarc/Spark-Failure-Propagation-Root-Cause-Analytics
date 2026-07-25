@@ -45,15 +45,6 @@ The failure injection scenarios and telemetry features assume a YARN-managed Spa
 
 ## Future Work
 
-### Multi-Root Traversal
-
-Extend Reverse BFS to identify **all** root causes in an application, not just the first one found. This requires:
-
-1. Identifying all connected components in the failure subgraph.
-2. Running Reverse BFS independently on each component.
-3. Returning a list of `RootCauseResult` objects per application.
-
-The `DAGBuilder` already computes disconnected subgraph information (root stages with no parents), so the infrastructure is partially in place.
 
 ### Dataset Augmentation
 

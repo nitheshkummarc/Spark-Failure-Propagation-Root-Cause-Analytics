@@ -247,7 +247,7 @@ object PreprocessRunner {
     println("\n  Root Cause Summary:")
     
     val byReason = rootCauses.groupBy { rc =>
-      rc.failureReason.take(30)
+      rc.failureReasons.take(30)
     }
     
     byReason.foreach { case (reason, results) =>
