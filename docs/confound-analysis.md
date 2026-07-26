@@ -74,7 +74,7 @@ Performance was stable — and marginally improved — after removing confounded
 
 **H₀ is supported.** Removing all three confounded features does not degrade model performance — it marginally improves it (F1: 0.8676 → 0.8725, CV F1: 0.9507 → 0.9524). The classifier primarily learns from runtime execution signals — GC pressure, memory spill, task duration variance, shuffle behavior — rather than from query-structural fingerprints.
 
-Cross-query invariance testing on 17 held-out applications confirmed **100% prediction agreement** between Model A and Model C, demonstrating that the behavioral features alone carry all discriminative signal.
+Removing three structurally-confounded features (`total_stages`, `stage_depth_of_failure`, `peak_memory_ratio`) slightly improved held-out F1, demonstrating the retained features reflect genuine execution behavior rather than query-specific artifacts.
 
 This is an important finding because it means the model has a path to generalizing beyond TPC-H workloads, provided the same telemetry features are available.
 

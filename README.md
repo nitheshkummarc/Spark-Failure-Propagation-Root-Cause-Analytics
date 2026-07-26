@@ -134,19 +134,19 @@ Open Google Colab, Databricks, or a local Jupyter environment and execute the no
 
 ## Results
 
-| Metric | Random Forest (Model C, 22 features) |
+| Metric | Random Forest (25 features) |
 |--------|---------------------------------------|
 | Accuracy | ≈ 88.2% |
 | Weighted Precision | ≈ 0.93 |
 | Weighted Recall | ≈ 0.88 |
-| Weighted F1 | ≈ 0.8725 |
-| 5-Fold CV F1 | ≈ 0.9524 |
+| Weighted F1 | ≈ 0.8676 |
+| 5-Fold CV F1 | ≈ 0.9507 |
 | 5-Fold CV Accuracy | ≈ 96.1% |
 
 ### Key Findings
 
 - **Reverse BFS** successfully localized dependency-aware root causes across all evaluated failure scenarios.
-- **Confound analysis** showed that removing 3 query-structural features (`total_stages`, `stage_depth_of_failure`, `peak_memory_ratio`) marginally *improved* F1 (0.8676 → 0.8725) and CV F1 (0.9507 → 0.9524), with 100% cross-query prediction invariance (17/17), confirming the model learns runtime execution behavior — not query fingerprints.
+- **Confound analysis** showed that removing 3 structurally-confounded features (`total_stages`, `stage_depth_of_failure`, `peak_memory_ratio`) slightly improved held-out F1 (0.8676 → 0.8725), demonstrating the retained features reflect genuine execution behavior rather than query-specific artifacts.
 - **Runtime telemetry features** were more informative than workflow structure for failure classification.
 
 ---
