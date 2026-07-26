@@ -72,10 +72,10 @@ object PropagationAnalyzer {
         DAGBuilder.StageNode(leafStageId, "Unknown", Set.empty))
       return RootCauseResult(
         appId = dag.appId,
-        rootCauseStageIds = Set(leafStage.stageId),
-        rootCauseStageNames = leafStage.stageName,
+        rootCauseStageIds = Set.empty,
+        rootCauseStageNames = "None",
         failureReasons = "NO_FAILURE",
-        propagationPath = Seq(leafStage.stageId),
+        propagationPath = Seq.empty,
         victimStages = Set.empty,
         analysisConfidence = 1.0
       )
