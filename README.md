@@ -39,38 +39,79 @@ This project automates that process:
 
 ## Architecture
 
-```text
-Spark Event Logs (.zstd)
-        │
-        ▼
-┌──────────────────┐
-│   Log Parser     │  Extracts SparkListenerTaskEnd + StageSubmitted events
-└────────┬─────────┘
-         │
-         ▼
-┌──────────────────┐
-│   DAG Builder    │  Reconstructs stage dependency graph from parent_ids
-└────────┬─────────┘
-         │
-         ▼
-┌──────────────────┐
-│  Propagation     │  Reverse BFS: terminal failure → root cause stage
-│  Analyzer        │  Identifies victim stages and propagation paths
-└────────┬─────────┘
-         │
-         ▼
-┌──────────────────┐
-│  Feature         │  25 features: duration, spill, GC, shuffle, structural
-│  Extractor       │  App-level aggregation across all stages
-└────────┬─────────┘
-         │
-         ▼
-┌──────────────────┐
-│  ML Classifier   │  Random Forest (100 trees) → 7-class failure prediction
-└──────────────────┘
-```
+```mermaid
+flowchart TB
+    subgraph Phase1["🟢 PHASE 1: Data Lake Foundation"]
+        A1["TPC-H dbgen<br/>(Local C Program)"]
+        A2["HDFS Raw Storage<br/>/project/tpch/raw/"]
+        A3["Parquet Converter<br/>(Scala/Spark)"]
+        A4["HDFS Optimized<br/>/project/tpch/parquet/"]
+        
+        A1 --> A2
+        A2 --> A3
+        A3 --> A4
+    end
 
-Full architecture diagrams: [docs/architecture.md](docs/architecture.md)
+    subgraph Phase2["🟠 PHASE 2: Failure Factory"]
+        B1["TPCHFailureSuite"]
+        B2["Baseline<br/>Q21 Normal"]
+        B3["OOM<br/>Q9 Broadcast"]
+        B4["DATA_SKEW<br/>Q18 Salted Key"]
+        B5["SERIALIZATION<br/>Q2 Socket UDF"]
+        B6["NETWORK<br/>Sleep Timeout"]
+        B7["DISK_SPACE<br/>CrossJoin Spill"]
+        B8["METADATA<br/>Path Deleted"]
+        
+        B1 --> B2
+        B1 --> B3
+        B1 --> B4
+        B1 --> B5
+        B1 --> B6
+        B1 --> B7
+        B1 --> B8
+    end
+
+    subgraph Phase3["🔵 PHASE 3: Intelligence Core"]
+        C1["Log Parser<br/>SparkListenerTaskEnd"]
+        C2["DAG Builder<br/>Stage Dependencies"]
+        C3["Propagation Analyzer<br/>Reverse BFS"]
+        C4["Feature Extractor<br/>ML Features"]
+        
+        C1 --> C2
+        C2 --> C3
+        C2 --> C4
+    end
+
+    subgraph Phase4["🟣 PHASE 4: Machine Learning"]
+        D1["Random Forest<br/>Classifier"]
+        D2["Model Training<br/>80/20 Split"]
+        D3["Model Evaluation<br/>Confusion Matrix"]
+        
+        D1 --> D2
+        D2 --> D3
+    end
+
+    subgraph Output["🟡 OUTPUT"]
+        E1["Unified<br/>Report"]
+    end
+
+    A4 --> B1
+    B2 --> C1
+    B3 --> C1
+    B4 --> C1
+    B5 --> C1
+    B6 --> C1
+    B7 --> C1
+    B8 --> C1
+    C4 --> D1
+    C3 --> E1
+    D3 --> E1
+    style Phase1 fill:#10b981,color:#fff
+    style Phase2 fill:#f97316,color:#fff
+    style Phase3 fill:#3b82f6,color:#fff
+    style Phase4 fill:#a855f7,color:#fff
+    style Output fill:#eab308,color:#fff
+```
 
 ---
 
